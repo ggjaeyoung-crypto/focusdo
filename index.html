@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="dark">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>포커스두</title>
+
+  <link rel="manifest" href="./manifest.json">
+   <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Roboto+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+  :root {
+  --bg: #000000;
+  --surface: #0a0a0a;
+  --surface2: #111111;
+    --border: #2e2e3e;
+    --text: #e8e8f0;
+    --text-dim: #7a7a9a;
+    --accent: #4ade80;
+    --accent-dim: #166534;
+    --red: #f87171;
+    --red-dim: #7f1d1d;
+    --blue: #60a5fa;
+    --yellow: #fbbf24;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+/* 2. html과 body 전체 배경을 블랙으로 선언하고 네이티브 앱처럼 고정합니다 */
+html, body {
+  background: #000000 !important; /* !important 추가 */
+  color-scheme: dark;
+  color: var(--text);
+  min-height: 100dvh;
+  font-family: 'Nanum Gothic', sans-serif;
+  overflow: hidden;
+  overscroll-behavior: none; /* 추가: 스크롤 바운스 시 흰선 방지 */
+}
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overscroll-behavior: none;
+}
+
+#app {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: var(--bg); 
+  
+  padding-top: env(safe-area-inset-top); 
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+  /* ── HEADER ── */
+  .header {
+    padding: 20px 20px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-left h1 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  .header-left p {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 1px;
+  }
+  .header-btns { display: flex; gap: 8px; }
+
+  .btn-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all .15s;
+    flex-shrink: 0;
+  }
+  .btn-icon:active { transform: scale(.93); background: var(--surface2); }
+  .btn-icon.accent { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 800; font-size: 22px; }
+
+  /* ── TODAY BAR ── */
+  .today-bar {
+    margin: 12px 20px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .today-bar:active { background: var(--surface2); }
+  .today-bar span { font-size: 12px; color: var(--text-dim); pointer-events: none; }
+  .today-total { font-family: 'Roboto Mono', monospace; font-size: 18px; font-weight: 700; color: var(--accent); }
+
+  /* ── TASK LIST ── */
+  .task-list {
+    flex: 1;
+    padding: 0 20px 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+  }
+
+  .task-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+  .task-card.running { border-color: var(--accent); box-shadow: 0 0 20px rgba(74,222,128,.12); }
+
+  .task-main {
+    display: flex;
+    align-items: center;
+    padding: 14px 14px;
+    gap: 10px;
+  }
+
+  .task-play {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #000;
+    font-size: 20px;
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all .15s;
+    box-shadow: 0 4px 12px rgba(74,222,128,.3);
+  }
+  .task-play:active { transform: scale(.9); }
+  .task-play.running { background: var(--red); box-shadow: 0 4px 12px rgba(248,113,113,.3); }
+
+  .task-info { flex: 1; min-width: 0; }
+  .task-name {
+    font-size: 15px; font-weight: 700;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .task-time-row {
+    display: flex; align-items: center; gap: 6px; margin-top: 3px;
+  }
+  .task-accumulated {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 13px; color: var(--accent); font-weight: 700;
+  }
+  .task-label { font-size: 11px; color: var(--text-dim); }
+  .task-running-badge {
+    font-size: 10px; background: var(--accent); color: #000;
+    padding: 1px 6px; border-radius: 20px; font-weight: 800;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+  .task-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .task-action-btn {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-size: 15px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .task-action-btn:active { transform: scale(.9); }
+  .task-action-btn.danger:active { background: var(--red-dim); color: var(--red); }
+
+  /* ── TIMER MINI BAR ── */
+  .timer-mini {
+    height: 4px;
+    background: var(--surface2);
+    position: relative;
+    overflow: hidden;
+  }
+  .timer-mini-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--blue));
+    transition: width .5s linear;
+  }
+
+  /* ── MODAL BASE ── */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.7);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex; align-items: flex-end;
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s;
+  }
+  .overlay.show { opacity: 1; pointer-events: all; }
+
+  .sheet {
+    width: 100%; max-width: 480px;
+    margin: 0 auto;
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    padding: 0 0 env(safe-area-inset-bottom, 20px);
+    transform: translateY(100%);
+    transition: transform .3s cubic-bezier(.32,.72,0,1);
+    max-height: 92dvh;
+    overflow-y: auto;
+  }
+  .overlay.show .sheet { transform: translateY(0); }
+
+  .sheet-handle {
+    width: 40px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 12px auto 0;
+  }
+  .sheet-title {
+    font-size: 17px; font-weight: 800;
+    padding: 16px 20px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sheet-body { padding: 16px 20px 24px; }
+
+  /* form elements */
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 12px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; display: block; }
+  .form-input {
+    width: 100%; padding: 12px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Nanum Gothic', sans-serif;
+    font-size: 15px;
+    outline: none;
+  }
+  .form-input:focus { border-color: var(--accent); }
+
+  .time-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .time-add-btn {
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 14px; font-weight: 700;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: 'Nanum Gothic', sans-serif;
+  }
+  .time-add-btn:active { transform: scale(.95); background: var(--accent); color: #000; border-color: var(--accent); }
+  .time-display {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 28px; font-weight: 700;
+    color: var(--accent);
+    text-align: center;
+    padding: 10px 0;
+  }
+  .time-reset-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 12px; cursor: pointer;
+    font-family: 'Nanum Gothic', sans-serif;
+  }
+
+  /* sound selector */
+  .sound-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .sound-btn {
+    padding: 10px 6px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-size: 12px; font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    transition: all .15s;
+    font-family: 'Nanum Gothic', sans-serif;
+  }
+  .sound-btn.selected { border-color: var(--accent); background: rgba(74,222,128,.12); color: var(--accent); }
+  .sound-btn:active { transform: scale(.95); }
+
+  .music-settings { display: flex; flex-direction: column; gap: 8px; }
+  .music-mode-row { display: flex; gap: 8px; }
+  .music-mode-btn { flex: 1; }
+  .music-file-input { display: none; }
+  .music-file-btn, .music-clear-btn {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Nanum Gothic', sans-serif;
+    transition: all .15s;
+  }
+  .music-file-btn:active, .music-clear-btn:active { transform: scale(.97); border-color: var(--accent); color: var(--accent); }
+  .music-clear-btn { background: transparent; color: var(--text-dim); }
+  .music-clear-btn:disabled { opacity: .45; pointer-events: none; }
+  .music-list { display: flex; flex-direction: column; gap: 6px; max-height: 132px; overflow-y: auto; }
+  .music-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .music-name {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .music-size {
+    flex-shrink: 0;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+  .music-remove {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--red);
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .music-empty {
+    padding: 10px;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    color: var(--text-dim);
+    font-size: 12px;
+    text-align: center;
+  }
+  .reset-row { display: flex; gap: 8px; align-items: center; }
+  .reset-row .form-input { flex: 1; }
+
+  /* action buttons */
+  .btn-row { display: flex; gap: 8px; margin-top: 20px; }
+  .btn-primary {
+    flex: 1; padding: 14px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--accent);
+    color: #000;
+    font-size: 15px; font-weight: 800;
+    cursor: pointer;
+    font-family: 'Nanum Gothic', sans-serif;
+    transition: all .15s;
+  }
+  .btn-primary:active { transform: scale(.97); }
+  .btn-secondary {
+    flex: 1; padding: 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+    font-family: 'Nanum Gothic', sans-serif;
+    transition: all .15s;
+  }
+  .btn-secondary:active { transform: scale(.97); }
+  .btn-danger {
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--red-dim);
+    background: transparent;
+    color: var(--red);
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+    font-family: 'Nanum Gothic', sans-serif;
+  }
+
+  /* ── TIMER FULLSCREEN ── */
+#timerScreen {
+  position: fixed; inset: 0;
+  background: #000000 !important; 
+  z-index: 200;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: space-between;
+  transform: translateY(100%);
+  transition: transform .35s cubic-bezier(.32,.72,0,1);
+  
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  /* 아래 한 줄을 추가해서 상단 하얀 틈새를 검은 그림자로 칠해버립니다 */
+  box-shadow: 0 -10px 0px #000000; 
+}
+
+  #timerScreen.show { transform: translateY(0); }
+
+.timer-header {
+    width: 100%;
+    background: #000000;
+    padding: 24px 20px;
+    display: flex; align-items: center; justify-content: center;
+    border-bottom: 1px solid #111;
+    box-shadow: none;
+  }
+  .timer-task-name {
+    font-size: 22px; font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+  }
+
+  .timer-middle-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .timer-ring-wrap {
+    position: relative;
+    width: 280px; height: 280px;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
+    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .timer-ring-wrap:active {
+    transform: scale(0.96);
+  }
+  
+  .timer-svg {
+    width: 280px; height: 280px;
+    transform: rotate(-90deg);
+  }
+.ring-bg { fill: none; stroke: var(--surface2); stroke-width: 14; transition: stroke 0.3s, fill 0.3s; }
+  .ring-elapsed { fill: none; stroke: var(--accent); stroke-width: 14; stroke-linecap: round; transition: stroke-dashoffset .5s linear, stroke 0.3s; }
+  .ring-remain { fill: none; stroke: var(--surface2); stroke-width: 14; stroke-linecap: round; transition: stroke-dashoffset .5s linear, stroke 0.3s; }
+
+  .timer-center-text {
+    position: absolute;
+    inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  
+  .timer-digits {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 52px; font-weight: 300;
+    letter-spacing: -2px;
+    line-height: 1;
+    color: var(--text);
+    transition: color 0.3s, font-size 0.3s;
+  }
+  .timer-digits span { color: var(--text-dim); font-size: 36px; transition: color 0.3s; }
+  
+  .timer-digits.ready { font-size: 44px; font-weight: 800; color: var(--accent); letter-spacing: -1px; font-family: 'Nanum Gothic', sans-serif; }
+  .timer-digits.ready span { display: none; }
+  
+  .timer-digits.over { color: var(--red); font-size: 46px; }
+  .timer-digits.over span { color: var(--red-dim); }
+
+  .timer-rpg-box {
+    width: 100%;
+    background: #000000; 
+    border-top: 1px solid #111;
+    padding: 24px 28px; 
+  }
+  .trb-row {
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+  }
+  .trb-val { 
+    font-family: 'Roboto Mono', monospace; 
+    font-size: 16px; 
+    font-weight: 700; 
+  }
+  .val-count { color: var(--accent); }
+  .val-time { color: var(--blue); }
+
+  /* ── STATS SHEET ── */
+  .stats-date-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .stats-date-nav button {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 16px; cursor: pointer;
+  }
+  .stats-date-str { font-size: 15px; font-weight: 700; }
+
+  .stats-bar-list { display: flex; flex-direction: column; gap: 12px; }
+  .stats-bar-item {}
+  .stats-bar-header { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px; }
+  .stats-bar-name { font-weight: 700; }
+  .stats-bar-val { font-family: 'Roboto Mono', monospace; color: var(--accent); font-weight: 700; }
+  .stats-bar-track { height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .stats-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--blue)); border-radius: 4px; transition: width .6s ease; }
+
+  .stats-empty { text-align: center; color: var(--text-dim); padding: 30px; font-size: 14px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--surface2); color: var(--text);
+    padding: 10px 20px; border-radius: 20px;
+    font-size: 13px; font-weight: 700;
+    opacity: 0; pointer-events: none;
+    transition: all .3s;
+    z-index: 999;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: var(--text-dim); gap: 10px;
+    padding: 40px;
+  }
+  .empty-state .icon { font-size: 48px; opacity: .4; }
+  .empty-state p { font-size: 14px; text-align: center; line-height: 1.6; }
+
+  select.form-input { appearance: none; }
+  .divider { height: 1px; background: var(--border); margin: 12px 0; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="header">
+    <div class="header-left">
+      <h1>포커스두 🎯</h1>
+      <p>집중이 필요할 때</p>
+    </div>
+    <div class="header-btns">
+      <button class="btn-icon accent" onclick="openAdd()" title="추가">＋</button>
+    </div>
+  </div>
+
+  <div class="today-bar" onclick="openStats()">
+    <span>오늘 총 집중시간</span>
+    <span class="today-total" id="todayTotal">00:00:00</span>
+  </div>
+
+  <div class="task-list" id="taskList"></div>
+
+</div>
+
+<div class="overlay" id="addOverlay" onclick="closeAddIfOutside(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="addSheetTitle">새 항목 추가</div>
+    <div class="sheet-body">
+      <div class="form-group">
+        <label class="form-label">제목</label>
+        <input class="form-input" id="inputName" type="text" placeholder="예: 독서, 운동, 공부..." maxlength="20">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">타이머 시간 설정</label>
+        <div class="time-display" id="timeDisplay">25:00</div>
+        <div class="time-btn-row">
+          <button class="time-add-btn" onclick="addTime(10)">＋10분</button>
+          <button class="time-add-btn" onclick="addTime(1)">＋1분</button>
+          <button class="time-add-btn" onclick="addTime(-1)">－1분</button>
+          <button class="time-add-btn" onclick="addTime(-10)">－10분</button>
+          <button class="time-reset-btn" onclick="resetTimeInput()">초기화</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">알림음</label>
+        <div class="sound-grid" id="soundGrid">
+          <button class="sound-btn selected" data-sound="bell" onclick="selectSound(this)">🔔 벨</button>
+          <button class="sound-btn" data-sound="chime" onclick="selectSound(this)">🎵 차임</button>
+          <button class="sound-btn" data-sound="beep" onclick="selectSound(this)">📢 비프</button>
+          <button class="sound-btn" data-sound="ding" onclick="selectSound(this)">✨ 딩</button>
+          <button class="sound-btn" data-sound="nature" onclick="selectSound(this)">🌿 자연</button>
+          <button class="sound-btn" data-sound="none" onclick="selectSound(this)">🔇 없음</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">시작 음악</label>
+        <div class="music-settings">
+          <div class="music-mode-row">
+            <button class="sound-btn music-mode-btn selected" type="button" data-mode="sequence" onclick="selectMusicMode(this)">순차</button>
+            <button class="sound-btn music-mode-btn" type="button" data-mode="random" onclick="selectMusicMode(this)">랜덤</button>
+          </div>
+          <input class="music-file-input" id="inputMusicFiles" type="file" accept="audio/*" multiple onchange="handleMusicFiles(this.files); this.value = '';">
+          <button class="music-file-btn" type="button" onclick="document.getElementById('inputMusicFiles').click()">음악 파일 선택</button>
+          <div class="music-list" id="musicList"></div>
+          <button class="music-clear-btn" type="button" onclick="clearMusicTracks()">재생목록 비우기</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">누적시간 초기화 시간 <span style="color:var(--text-dim);font-weight:400;text-transform:none">(하루 시작 기준)</span></label>
+        <div class="reset-row">
+          <input class="form-input" id="inputResetHour" type="number" min="0" max="23" placeholder="0" style="max-width:80px">
+          <span style="color:var(--text-dim);font-size:14px">시</span>
+          <input class="form-input" id="inputResetMin" type="number" min="0" max="59" placeholder="0" style="max-width:80px">
+          <span style="color:var(--text-dim);font-size:14px">분</span>
+        </div>
+        <p style="font-size:11px;color:var(--text-dim);margin-top:6px">설정 시간 이후 첫 실행 시 누적시간과 횟수가 초기화됩니다</p>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="closeAdd()">취소</button>
+        <button class="btn-danger" id="deleteBtn" onclick="deleteCurrentTask()" style="display:none">삭제</button>
+        <button class="btn-primary" onclick="saveTask()">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="statsOverlay" onclick="closeStatsIfOutside(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">날짜별 통계</div>
+    <div class="sheet-body">
+      <div class="stats-date-nav">
+        <button onclick="statsDateShift(-1)">◀</button>
+        <span class="stats-date-str" id="statsDateStr"></span>
+        <button onclick="statsDateShift(1)">▶</button>
+      </div>
+      <div class="stats-bar-list" id="statsContent"></div>
+    </div>
+  </div>
+</div>
+
+<div id="timerScreen">
+  
+  <div class="timer-header">
+    <span class="timer-task-name" id="timerTaskName"></span>
+  </div>
+
+  <div class="timer-middle-area">
+<div class="timer-ring-wrap" id="timerRingWrap">
+      <svg class="timer-svg" viewBox="0 0 280 280">
+        <defs>
+          <radialGradient id="gradReady">
+            <stop offset="0%" stop-color="#4ade80" stop-opacity="0.4" />
+            <stop offset="100%" stop-color="#4ade80" stop-opacity="0" />
+          </radialGradient>
+          <radialGradient id="gradPaused">
+            <stop offset="0%" stop-color="#f87171" stop-opacity="0.4" />
+            <stop offset="100%" stop-color="#f87171" stop-opacity="0" />
+          </radialGradient>
+        </defs>
+        
+        <circle class="ring-bg" cx="140" cy="140" r="120"/>
+        <circle class="ring-elapsed" id="ringElapsed" cx="140" cy="140" r="120"/>
+        <circle class="ring-remain" id="ringRemain" cx="140" cy="140" r="120"/>
+      </svg>
+      <div class="timer-center-text">
+        <div class="timer-digits ready" id="timerDigits">시작</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="timer-rpg-box">
+    <div class="trb-row">
+      <span class="trb-val val-count" id="tbiCount">0회</span>
+      <span class="trb-val val-time" id="tbiAccum">00:00:00</span>
+    </div>
+  </div>
+  
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let tasks = [];
+let statsDate = new Date();
+
+const STORAGE_KEY = 'focusdo_v2';
+const HISTORY_KEY = 'focusdo_history_v2';
+const MUSIC_DB_NAME = 'focusdo_music_v1';
+const MUSIC_STORE = 'tracks';
+const AUDIO_EXT_RE = /\.(aac|flac|m4a|mp3|oga|ogg|opus|wav|webm)$/i;
+const memoryMusicRecords = new Map();
+const HTML_ESCAPE = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+let musicDbPromise = null;
+
+function openMusicDb() {
+  if (!('indexedDB' in window)) return Promise.reject(new Error('IndexedDB unavailable'));
+  if (musicDbPromise) return musicDbPromise;
+
+  musicDbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open(MUSIC_DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(MUSIC_STORE)) {
+        db.createObjectStore(MUSIC_STORE, { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+    req.onblocked = () => reject(new Error('IndexedDB blocked'));
+  });
+
+  return musicDbPromise;
+}
+
+async function withMusicStore(mode, action) {
+  const db = await openMusicDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(MUSIC_STORE, mode);
+    const store = tx.objectStore(MUSIC_STORE);
+    let request;
+
+    try {
+      request = action(store);
+    } catch (err) {
+      reject(err);
+      return;
+    }
+
+    tx.onerror = () => reject(tx.error);
+    if (request && 'onsuccess' in request) {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    } else {
+      tx.oncomplete = () => resolve();
+    }
+  });
+}
+
+async function putMusicTrack(record) {
+  try {
+    await withMusicStore('readwrite', store => store.put(record));
+    return true;
+  } catch (err) {
+    console.warn('Music storage fallback:', err);
+    memoryMusicRecords.set(record.id, record);
+    return false;
+  }
+}
+
+async function getMusicTrack(id) {
+  if (memoryMusicRecords.has(id)) return memoryMusicRecords.get(id);
+  try {
+    return await withMusicStore('readonly', store => store.get(id));
+  } catch (err) {
+    console.warn('Music load failed:', err);
+    return null;
+  }
+}
+
+async function deleteMusicTrack(id) {
+  memoryMusicRecords.delete(id);
+  try {
+    await withMusicStore('readwrite', store => store.delete(id));
+  } catch (err) {
+    console.warn('Music delete failed:', err);
+  }
+}
+
+function deleteMusicTracks(tracks) {
+  (Array.isArray(tracks) ? tracks : []).forEach(track => {
+    if (track?.id) deleteMusicTrack(track.id);
+  });
+}
+
+function makeMusicTrackId() {
+  return `music_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
+function isAudioFile(file) {
+  return !!file && (file.type.startsWith('audio/') || AUDIO_EXT_RE.test(file.name));
+}
+
+function cloneMusicTracks(tracks) {
+  return (Array.isArray(tracks) ? tracks : [])
+    .filter(track => track && track.id)
+    .map(track => ({
+      id: track.id,
+      name: track.name || 'music',
+      type: track.type || 'audio/mpeg',
+      size: track.size || 0
+    }));
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => HTML_ESCAPE[ch]);
+}
+
+function formatBytes(size) {
+  if (!size) return '';
+  if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))}KB`;
+  return `${(size / 1024 / 1024).toFixed(1)}MB`;
+}
+
+function enterFullscreen() {}
+function exitFullscreen() {}
+
+function handlePlay(id) {
+  const task = tasks.find(t => t.id == id);
+  if (!task) return;
+  if (activeTask && activeTask.id === id && timerState !== 'READY') {
+    enterFullscreen();
+    document.getElementById('timerScreen').classList.add('show');
+  } else {
+    enterFullscreen();
+    openTimerScreen(task);
+  }
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+
+function load() {
+  const d = localStorage.getItem(STORAGE_KEY);
+  if (d) tasks = JSON.parse(d);
+  else tasks = [
+    createTask('집 고치기', 30, 'bell', 0, 0),
+    createTask('집안일', 30, 'chime', 0, 0),
+    createTask('주식 공부', 15, 'bell', 0, 0),
+  ];
+  
+  tasks.forEach(t => {
+    t.todayCount = t.todayCount || 0;
+    t.musicMode = t.musicMode === 'random' ? 'random' : 'sequence';
+    t.musicTracks = cloneMusicTracks(t.musicTracks);
+    t.musicCursor = Number.isInteger(t.musicCursor) ? t.musicCursor : 0;
+  });
+}
+
+function createTask(name, minutes, sound, resetHour, resetMin) {
+  return {
+    id: Date.now() + Math.random(),
+    name,
+    minutes,
+    sound,
+    resetHour: resetHour ?? 0,
+    resetMin: resetMin ?? 0,
+    accumulated: 0,
+    todayCount: 0,
+    musicMode: 'sequence',
+    musicTracks: [],
+    musicCursor: 0,
+    lastResetDate: '',
+  };
+}
+
+function getHistory() {
+  const d = localStorage.getItem(HISTORY_KEY);
+  return d ? JSON.parse(d) : [];
+}
+function saveHistory(h) {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
+}
+
+function getLogicalDateStr(dateObj, resetHour, resetMin) {
+  const d = new Date(dateObj.getTime());
+  const currentHour = d.getHours();
+  const currentMin = d.getMinutes();
+
+  if (currentHour < resetHour || (currentHour === resetHour && currentMin < resetMin)) {
+    d.setDate(d.getDate() - 1);
+  }
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function addHistory(taskId, seconds) {
+  if (seconds <= 0) return;
+  const h = getHistory();
+  
+  const task = tasks.find(t => t.id === taskId);
+  const rH = task ? (task.resetHour || 0) : 0;
+  const rM = task ? (task.resetMin || 0) : 0;
+  
+  const logicalToday = getLogicalDateStr(new Date(), rH, rM);
+  const idx = h.findIndex(x => x.taskId === taskId && x.date === logicalToday);
+  
+  if (idx >= 0) h[idx].seconds += seconds;
+  else h.push({ taskId, date: logicalToday, seconds });
+  saveHistory(h);
+}
+
+function checkAutoReset(task) {
+  const now = new Date();
+  const rH = task.resetHour || 0;
+  const rM = task.resetMin || 0;
+  const logicalToday = getLogicalDateStr(now, rH, rM);
+
+  if (task.lastResetDate !== logicalToday) {
+    task.accumulated = 0;
+    task.todayCount = 0;
+    task.lastResetDate = logicalToday;
+  }
+}
+
+function fmtSecLong(s) {
+  if (!s || s < 0) return '00:00:00';
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = Math.floor(s % 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+}
+
+let activeTask = null;
+let timerTotal = 0;
+let timerElapsed = 0;
+let timerInterval = null;
+let sessionStart = 0;
+
+let timerState = 'READY';
+let hasNotifiedDone = false;
+let sessionFinalized = false;
+
+const CIRCUMFERENCE = 2 * Math.PI * 120;
+
+function openTimerScreen(task) {
+  activeTask = task;
+  timerTotal = task.minutes * 60;
+  timerElapsed = 0;
+  timerState = 'READY';
+  hasNotifiedDone = false;
+  sessionFinalized = false;
+  clearInterval(timerInterval);
+  prepareTimerMusicForTask(task);
+  
+  document.getElementById('timerTaskName').textContent = task.name;
+  updateTimerUI();
+  document.getElementById('timerScreen').classList.add('show');
+}
+
+const ringWrap = document.getElementById('timerRingWrap');
+let pressTimer = null;
+let isLongPress = false;
+
+function startPress(e) {
+  if (e.cancelable) e.preventDefault(); 
+  isLongPress = false;
+  
+  pressTimer = setTimeout(() => {
+    isLongPress = true;
+    if (navigator.vibrate) navigator.vibrate(50);
+    closeTimerScreen();
+  }, 800);
+}
+
+function cancelPress() {
+  if (pressTimer) clearTimeout(pressTimer);
+}
+
+function endPress(e) {
+  if (pressTimer) clearTimeout(pressTimer);
+  if (!isLongPress && activeTask) {
+    handleTimerTap();
+  }
+}
+
+ringWrap.addEventListener('mousedown', startPress);
+ringWrap.addEventListener('touchstart', startPress, {passive: false});
+
+ringWrap.addEventListener('mouseleave', cancelPress);
+ringWrap.addEventListener('touchcancel', cancelPress);
+
+ringWrap.addEventListener('mouseup', endPress);
+ringWrap.addEventListener('touchend', endPress);
+
+function handleTimerTap() {
+  if (timerState === 'READY') {
+    timerState = 'RUNNING';
+    sessionStart = Date.now();
+    timerInterval = setInterval(timerTick, 500);
+    startTimerMusic();
+    if (navigator.vibrate) navigator.vibrate(30);
+  } else if (timerState === 'RUNNING') {
+    timerState = 'PAUSED';
+    clearInterval(timerInterval);
+    timerElapsed = (Date.now() - sessionStart) / 1000;
+    pauseTimerMusic();
+    if (navigator.vibrate) navigator.vibrate(30);
+  } else if (timerState === 'PAUSED') {
+    timerState = 'RUNNING';
+    sessionStart = Date.now() - (timerElapsed * 1000);
+    timerInterval = setInterval(timerTick, 500);
+    resumeTimerMusic();
+    if (navigator.vibrate) navigator.vibrate(30);
+  }
+  updateTimerUI();
+  renderTasks();
+}
+
+async function prepareTimerMusicForTask(task) {
+  activeMusicToken += 1;
+  releaseActiveAudio();
+  activeMusicPlaylist = cloneMusicTracks(task?.musicTracks);
+  activeMusicMode = task?.musicMode === 'random' ? 'random' : 'sequence';
+  activeMusicIndex = pickTimerMusicIndex(task, activeMusicPlaylist);
+
+  if (activeMusicIndex >= 0) {
+    await prepareTimerMusicAt(activeMusicIndex, activeMusicToken);
+  }
+}
+
+function pickTimerMusicIndex(task, tracks) {
+  if (!tracks.length) return -1;
+  if (task?.musicMode === 'random') return Math.floor(Math.random() * tracks.length);
+  const cursor = Number.isInteger(task?.musicCursor) ? task.musicCursor : 0;
+  return Math.max(0, Math.min(cursor, tracks.length - 1));
+}
+
+async function prepareTimerMusicAt(index, token = activeMusicToken) {
+  const track = activeMusicPlaylist[index];
+  if (!track) return;
+
+  const record = await getMusicTrack(track.id);
+  if (token !== activeMusicToken) return;
+  releaseActiveAudio();
+
+  if (!record?.blob) {
+    showToast('음악 파일을 다시 선택해 주세요.');
+    return;
+  }
+
+  activeAudioUrl = URL.createObjectURL(record.blob);
+  activeAudio = new Audio(activeAudioUrl);
+  activeAudio.preload = 'auto';
+  activeAudio.onended = advanceTimerMusic;
+  activeAudio.onerror = () => showToast('음악을 재생할 수 없어요.');
+}
+
+function playActiveMusic() {
+  if (!activeAudio) return;
+  const playPromise = activeAudio.play();
+  if (playPromise?.catch) {
+    playPromise.catch(err => {
+      console.warn('Music play failed:', err);
+      showToast('음악을 재생할 수 없어요.');
+    });
+  }
+}
+
+function startTimerMusic() {
+  if (!activeMusicPlaylist.length || activeMusicIndex < 0) return;
+  const startedIndex = activeMusicIndex;
+
+  if (activeAudio) {
+    activeAudio.currentTime = 0;
+    playActiveMusic();
+  } else {
+    prepareTimerMusicAt(activeMusicIndex).then(() => {
+      if (timerState === 'RUNNING') playActiveMusic();
+    });
+  }
+
+  if (activeMusicMode === 'sequence' && activeTask) {
+    activeTask.musicCursor = (startedIndex + 1) % activeMusicPlaylist.length;
+    save();
+  }
+}
+
+function pauseTimerMusic() {
+  if (activeAudio && !activeAudio.paused) activeAudio.pause();
+}
+
+function resumeTimerMusic() {
+  playActiveMusic();
+}
+
+async function advanceTimerMusic() {
+  if (timerState === 'READY' || !activeMusicPlaylist.length) return;
+  activeMusicIndex = activeMusicMode === 'random'
+    ? Math.floor(Math.random() * activeMusicPlaylist.length)
+    : (activeMusicIndex + 1) % activeMusicPlaylist.length;
+
+  await prepareTimerMusicAt(activeMusicIndex);
+  if (timerState === 'RUNNING') playActiveMusic();
+}
+
+function releaseActiveAudio() {
+  if (activeAudio) {
+    activeAudio.pause();
+    activeAudio.removeAttribute('src');
+    activeAudio.load();
+  }
+  if (activeAudioUrl) URL.revokeObjectURL(activeAudioUrl);
+  activeAudio = null;
+  activeAudioUrl = '';
+}
+
+function stopTimerMusic() {
+  activeMusicToken += 1;
+  releaseActiveAudio();
+  activeMusicPlaylist = [];
+  activeMusicMode = 'sequence';
+  activeMusicIndex = -1;
+}
+
+function closeTimerScreen() {
+  exitFullscreen();
+  
+  if (sessionFinalized) return;
+  sessionFinalized = true;
+  clearInterval(timerInterval);
+  stopTimerMusic();
+
+  if (timerState !== 'READY' && timerElapsed > 0) {
+    activeTask.accumulated += timerElapsed;
+    activeTask.todayCount = (activeTask.todayCount || 0) + 1;
+    addHistory(activeTask.id, timerElapsed);
+    save();
+    showToast('⏹ 집중 기록이 저장되었어요.');
+  }
+
+  document.getElementById('timerScreen').classList.remove('show');
+  timerState = 'READY';
+  activeTask = null;
+  renderTasks();
+}
+
+function timerTick() {
+  timerElapsed = (Date.now() - sessionStart) / 1000;
+
+  if (timerElapsed >= timerTotal && !hasNotifiedDone) {
+    hasNotifiedDone = true;
+    playSound(activeTask?.sound || 'bell');
+    showToast('🎉 설정한 집중 시간을 모두 채웠어요! 초과 시간이 기록됩니다.');
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+  }
+
+  updateTimerUI();
+}
+
+function updateTimerUI() {
+  if (!activeTask) return;
+
+  const remain = timerTotal - timerElapsed;
+  const timerDigits = document.getElementById('timerDigits');
+  const ringE = document.getElementById('ringElapsed');
+  const ringR = document.getElementById('ringRemain');
+  const ringBg = document.querySelector('.ring-bg');
+
+  if (timerState === 'READY') {
+    timerDigits.innerHTML = '시작';
+    timerDigits.className = 'timer-digits ready';
+    
+    ringE.style.strokeDasharray = `0 ${CIRCUMFERENCE}`;
+    ringE.style.stroke = 'var(--accent)';
+    ringR.style.strokeDasharray = `${CIRCUMFERENCE} ${CIRCUMFERENCE}`;
+    ringR.style.strokeDashoffset = 0;
+    ringR.style.stroke = 'var(--surface2)';
+    ringBg.style.stroke = 'var(--surface2)';
+  } else {
+    if (remain >= 0) {
+      const mins = Math.floor(remain / 60);
+      const secs = Math.floor(remain % 60);
+      timerDigits.innerHTML = `${String(mins).padStart(2,'0')}<span>:</span>${String(secs).padStart(2,'0')}`;
+      timerDigits.className = 'timer-digits';
+
+      const elapsedFrac = Math.min(timerElapsed / timerTotal, 1);
+      const remainFrac = 1 - elapsedFrac;
+      const elapsedLen = elapsedFrac * CIRCUMFERENCE;
+      const remainLen = remainFrac * CIRCUMFERENCE;
+
+      ringE.style.strokeDasharray = `${elapsedLen} ${CIRCUMFERENCE}`;
+      ringE.style.strokeDashoffset = 0;
+      ringE.style.stroke = 'var(--accent)';
+
+      ringR.style.strokeDasharray = `${remainLen} ${CIRCUMFERENCE}`;
+      ringR.style.strokeDashoffset = -elapsedLen;
+      ringR.style.stroke = 'var(--red)';
+    } else {
+      const over = Math.abs(remain);
+      const mins = Math.floor(over / 60);
+      const secs = Math.floor(over % 60);
+      timerDigits.innerHTML = `+${String(mins).padStart(2,'0')}<span>:</span>${String(secs).padStart(2,'0')}`;
+      timerDigits.className = 'timer-digits over';
+
+      ringE.style.strokeDasharray = `${CIRCUMFERENCE} ${CIRCUMFERENCE}`;
+      ringE.style.strokeDashoffset = 0;
+      ringE.style.stroke = 'var(--red)';
+      ringR.style.strokeDasharray = `0 ${CIRCUMFERENCE}`;
+    }
+  }
+
+  const colonSpan = timerDigits.querySelector('span');
+  timerDigits.style.color = '';         
+  if (colonSpan) colonSpan.style.color = '';
+
+  if (timerState === 'READY') {
+    ringBg.style.fill = 'url(#gradReady)';  
+  } else if (timerState === 'PAUSED') {
+    ringBg.style.fill = 'url(#gradPaused)'; 
+  } else {
+    ringBg.style.fill = 'transparent';      
+  }
+  const currentSessionSec = (timerState !== 'READY') ? timerElapsed : 0;
+  const totalAccum = (activeTask.accumulated || 0) + currentSessionSec;
+  document.getElementById('tbiAccum').textContent = fmtSecLong(totalAccum);
+
+  const displayCount = (activeTask.todayCount || 0) + (timerState !== 'READY' ? 1 : 0);
+  document.getElementById('tbiCount').textContent = `${displayCount}회`;
+}
+
+function renderTasks() {
+  const list = document.getElementById('taskList');
+
+  if (tasks.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="icon">🎯</div>
+      <p>아직 항목이 없어요.<br>상단 <b>+</b> 버튼으로 추가해보세요!</p>
+    </div>`;
+    document.getElementById('todayTotal').textContent = '00:00:00';
+    return;
+  }
+
+  tasks.forEach(t => checkAutoReset(t));
+
+  let todayTotal = 0;
+  tasks.forEach(t => { todayTotal += (t.accumulated || 0); });
+  if (activeTask && timerState !== 'READY') {
+    todayTotal += timerElapsed;
+  }
+  document.getElementById('todayTotal').textContent = fmtSecLong(todayTotal);
+
+  list.innerHTML = tasks.map((t, i) => {
+    const isRunning = activeTask && activeTask.id === t.id && timerState !== 'READY';
+    const accum = (t.accumulated || 0) + (isRunning ? timerElapsed : 0);
+    const progress = isRunning ? Math.min(timerElapsed / timerTotal, 1) : 0;
+    
+    return `<div class="task-card ${isRunning && timerState === 'RUNNING' ? 'running' : ''}" id="card_${t.id}">
+      <div class="task-main">
+        <button class="task-play ${isRunning && timerState === 'RUNNING' ? 'running' : ''}" onclick="handlePlay('${t.id}')">
+          ${(isRunning && timerState === 'RUNNING') ? '⏸' : '▶'}
+        </button>
+        <div class="task-info">
+          <div class="task-name">${t.name}</div>
+          <div class="task-time-row">
+            <span class="task-accumulated">${fmtSecLong(accum)}</span>
+            <span class="task-label">누적</span>
+            ${isRunning && timerState === 'RUNNING' ? '<span class="task-running-badge">집중 중</span>' : ''}
+          </div>
+        </div>
+        <div class="task-actions">
+          <button class="task-action-btn" onclick="openEdit('${t.id}')" title="설정">⚙️</button>
+        </div>
+      </div>
+      ${isRunning ? `<div class="timer-mini"><div class="timer-mini-fill" style="width:${progress*100}%"></div></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+let editingTaskId = null;
+let inputMinutes = 25;
+let selectedSound = 'bell';
+let selectedMusicMode = 'sequence';
+let selectedMusicTracks = [];
+let draftMusicTrackIds = new Set();
+let activeAudio = null;
+let activeAudioUrl = '';
+let activeMusicPlaylist = [];
+let activeMusicMode = 'sequence';
+let activeMusicIndex = -1;
+let activeMusicToken = 0;
+
+function openAdd() {
+  cleanupDraftMusic();
+  editingTaskId = null;
+  inputMinutes = 25;
+  selectedSound = 'bell';
+  selectedMusicMode = 'sequence';
+  selectedMusicTracks = [];
+  draftMusicTrackIds = new Set();
+  document.getElementById('addSheetTitle').textContent = '새 항목 추가';
+  document.getElementById('inputName').value = '';
+  document.getElementById('inputResetHour').value = '0';
+  document.getElementById('inputResetMin').value = '0';
+  document.getElementById('deleteBtn').style.display = 'none';
+  updateTimeDisplay();
+  updateSoundUI();
+  updateMusicUI();
+  document.getElementById('addOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('inputName').focus(), 350);
+}
+
+function openEdit(id) {
+  const task = tasks.find(t => t.id == id);
+  if (!task) return;
+  editingTaskId = id;
+  inputMinutes = task.minutes;
+  selectedSound = task.sound || 'bell';
+  selectedMusicMode = task.musicMode === 'random' ? 'random' : 'sequence';
+  selectedMusicTracks = cloneMusicTracks(task.musicTracks);
+  draftMusicTrackIds = new Set();
+  document.getElementById('addSheetTitle').textContent = '항목 수정';
+  document.getElementById('inputName').value = task.name;
+  document.getElementById('inputResetHour').value = task.resetHour || 0;
+  document.getElementById('inputResetMin').value = task.resetMin || 0;
+  document.getElementById('deleteBtn').style.display = '';
+  updateTimeDisplay();
+  updateSoundUI();
+  updateMusicUI();
+  document.getElementById('addOverlay').classList.add('show');
+}
+
+function closeAdd(discardDraft = true) {
+  if (discardDraft) cleanupDraftMusic();
+  document.getElementById('addOverlay').classList.remove('show');
+}
+function closeAddIfOutside(e) { if (e.target === document.getElementById('addOverlay')) closeAdd(); }
+
+function addTime(m) {
+  inputMinutes = Math.max(1, Math.min(180, inputMinutes + m));
+  updateTimeDisplay();
+}
+function resetTimeInput() { inputMinutes = 25; updateTimeDisplay(); }
+function updateTimeDisplay() {
+  document.getElementById('timeDisplay').textContent =
+    `${String(Math.floor(inputMinutes/60)*60 + inputMinutes%60).padStart(2,'0') === '00' ? '00' : String(Math.floor(inputMinutes)).padStart(2,'0')}:00`;
+  const m = inputMinutes;
+  document.getElementById('timeDisplay').textContent = `${String(m).padStart(2,'0')}:00`;
+}
+
+function selectSound(btn) {
+  selectedSound = btn.dataset.sound;
+  updateSoundUI();
+  playSound(selectedSound);
+}
+function updateSoundUI() {
+  document.querySelectorAll('#soundGrid .sound-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.sound === selectedSound);
+  });
+}
+function updateMusicUI() {
+  document.querySelectorAll('.music-mode-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.mode === selectedMusicMode);
+  });
+
+  const list = document.getElementById('musicList');
+  if (!list) return;
+
+  if (selectedMusicTracks.length === 0) {
+    list.innerHTML = '<div class="music-empty">선택된 음악 없음</div>';
+  } else {
+    list.innerHTML = selectedMusicTracks.map(track => `
+      <div class="music-item">
+        <span class="music-name">${escapeHtml(track.name)}</span>
+        <span class="music-size">${formatBytes(track.size)}</span>
+        <button class="music-remove" type="button" onclick="removeMusicTrack('${track.id}')">×</button>
+      </div>
+    `).join('');
+  }
+
+  const clearBtn = document.querySelector('.music-clear-btn');
+  if (clearBtn) clearBtn.disabled = selectedMusicTracks.length === 0;
+}
+
+function selectMusicMode(btn) {
+  selectedMusicMode = btn.dataset.mode === 'random' ? 'random' : 'sequence';
+  updateMusicUI();
+}
+
+async function handleMusicFiles(fileList) {
+  const files = Array.from(fileList || []).filter(isAudioFile);
+  if (files.length === 0) {
+    showToast('음악 파일을 선택해 주세요.');
+    return;
+  }
+
+  let usedTemporaryStorage = false;
+  for (const file of files) {
+    const meta = {
+      id: makeMusicTrackId(),
+      name: file.name,
+      type: file.type || 'audio/mpeg',
+      size: file.size || 0
+    };
+
+    const persisted = await putMusicTrack({ ...meta, blob: file });
+    usedTemporaryStorage = usedTemporaryStorage || !persisted;
+    selectedMusicTracks.push(meta);
+    draftMusicTrackIds.add(meta.id);
+  }
+
+  updateMusicUI();
+  showToast(usedTemporaryStorage ? '음악이 임시 재생목록에 추가됐어요.' : '음악이 재생목록에 추가됐어요.');
+}
+
+function removeMusicTrack(id) {
+  selectedMusicTracks = selectedMusicTracks.filter(track => track.id !== id);
+  if (draftMusicTrackIds.has(id)) {
+    deleteMusicTrack(id);
+    draftMusicTrackIds.delete(id);
+  }
+  updateMusicUI();
+}
+
+function clearMusicTracks() {
+  selectedMusicTracks.forEach(track => {
+    if (draftMusicTrackIds.has(track.id)) deleteMusicTrack(track.id);
+  });
+  draftMusicTrackIds.clear();
+  selectedMusicTracks = [];
+  updateMusicUI();
+}
+
+function cleanupDraftMusic() {
+  draftMusicTrackIds.forEach(id => deleteMusicTrack(id));
+  draftMusicTrackIds.clear();
+}
+
+function deleteUnlinkedMusicTracks(oldTracks, newTracks) {
+  const newIds = new Set(cloneMusicTracks(newTracks).map(track => track.id));
+  cloneMusicTracks(oldTracks).forEach(track => {
+    if (!newIds.has(track.id)) deleteMusicTrack(track.id);
+  });
+}
+
+function saveTask() {
+  const name = document.getElementById('inputName').value.trim();
+  if (!name) { showToast('제목을 입력해주세요'); return; }
+  const rh = parseInt(document.getElementById('inputResetHour').value) || 0;
+  const rm = parseInt(document.getElementById('inputResetMin').value) || 0;
+
+  if (editingTaskId) {
+    const task = tasks.find(t => t.id == editingTaskId);
+    if (task) {
+      task.name = name;
+      task.minutes = inputMinutes;
+      task.sound = selectedSound;
+      deleteUnlinkedMusicTracks(task.musicTracks, selectedMusicTracks);
+      task.musicMode = selectedMusicMode;
+      task.musicTracks = cloneMusicTracks(selectedMusicTracks);
+      task.musicCursor = Math.min(task.musicCursor || 0, Math.max(task.musicTracks.length - 1, 0));
+      task.resetHour = rh;
+      task.resetMin = rm;
+    }
+    showToast('✅ 수정됐어요');
+  } else {
+    const task = createTask(name, inputMinutes, selectedSound, rh, rm);
+    task.musicMode = selectedMusicMode;
+    task.musicTracks = cloneMusicTracks(selectedMusicTracks);
+    tasks.push(task);
+    showToast('✅ 추가됐어요');
+  }
+  draftMusicTrackIds.clear();
+  save();
+  closeAdd(false);
+  renderTasks();
+}
+
+function deleteCurrentTask() {
+  if (!editingTaskId) return;
+  if (!confirm('삭제할까요?')) return;
+  const task = tasks.find(t => t.id == editingTaskId);
+  if (task) deleteMusicTracks(task.musicTracks);
+  tasks = tasks.filter(t => t.id != editingTaskId);
+  save();
+  closeAdd();
+  renderTasks();
+  showToast('🗑 삭제됐어요');
+}
+
+let statsFilterId = null;
+
+function openStats(taskId) {
+  statsFilterId = taskId || null;
+  statsDate = new Date();
+  document.getElementById('statsOverlay').classList.add('show');
+  renderStats();
+}
+function closeStatsIfOutside(e) { if (e.target === document.getElementById('statsOverlay')) document.getElementById('statsOverlay').classList.remove('show'); }
+
+function statsDateShift(d) {
+  statsDate.setDate(statsDate.getDate() + d);
+  renderStats();
+}
+
+function renderStats() {
+  const ds = `${statsDate.getFullYear()}-${String(statsDate.getMonth()+1).padStart(2,'0')}-${String(statsDate.getDate()).padStart(2,'0')}`;
+  const weekdays = ['일','월','화','수','목','금','토'];
+  const wd = weekdays[statsDate.getDay()];
+  document.getElementById('statsDateStr').textContent = `${statsDate.getMonth()+1}월 ${statsDate.getDate()}일 (${wd})`;
+
+  const history = getHistory();
+  const dayHistory = history.filter(h => h.date === ds);
+
+  const content = document.getElementById('statsContent');
+  if (dayHistory.length === 0) {
+    content.innerHTML = '<div class="stats-empty">이 날의 기록이 없어요 😴</div>';
+    return;
+  }
+
+  const maxSec = Math.max(...dayHistory.map(h => h.seconds), 1);
+  const html = tasks.map(t => {
+    const rec = dayHistory.find(h => h.taskId === t.id);
+    const sec = rec ? rec.seconds : 0;
+    if (!rec) return '';
+    const pct = (sec / maxSec * 100).toFixed(1);
+    return `<div class="stats-bar-item">
+      <div class="stats-bar-header">
+        <span class="stats-bar-name">${t.name}</span>
+        <span class="stats-bar-val">${fmtSecLong(sec)}</span>
+      </div>
+      <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+
+  const totalSec = dayHistory.reduce((s,h)=>s+h.seconds,0);
+  content.innerHTML = html + `<div class="divider"></div>
+    <div style="display:flex;justify-content:space-between;font-size:13px">
+      <span style="color:var(--text-dim)">합계</span>
+      <span style="font-family:'Roboto Mono',monospace;color:var(--accent);font-weight:700">${fmtSecLong(totalSec)}</span>
+    </div>`;
+}
+
+function playSound(type) {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const sounds = {
+    bell: () => {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine'; o.frequency.setValueAtTime(880, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(440, ctx.currentTime+.5);
+      g.gain.setValueAtTime(.4, ctx.currentTime); g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime+1);
+      o.start(); o.stop(ctx.currentTime+1);
+    },
+    chime: () => {
+      [523,659,784].forEach((f,i) => {
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0, ctx.currentTime+i*.15);
+        g.gain.linearRampToValueAtTime(.3, ctx.currentTime+i*.15+.05);
+        g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime+i*.15+.5);
+        o.start(ctx.currentTime+i*.15); o.stop(ctx.currentTime+i*.15+.5);
+      });
+    },
+    beep: () => {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'square'; o.frequency.value = 440;
+      g.gain.setValueAtTime(.2, ctx.currentTime); g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime+.3);
+      o.start(); o.stop(ctx.currentTime+.3);
+    },
+    ding: () => {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine'; o.frequency.value = 1047;
+      g.gain.setValueAtTime(.4, ctx.currentTime); g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime+.8);
+      o.start(); o.stop(ctx.currentTime+.8);
+    },
+    nature: () => {
+      [330,440,550,660].forEach((f,i) => {
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0, ctx.currentTime+i*.2);
+        g.gain.linearRampToValueAtTime(.15, ctx.currentTime+i*.2+.1);
+        g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime+i*.2+.6);
+        o.start(ctx.currentTime+i*.2); o.stop(ctx.currentTime+i*.2+.6);
+      });
+    },
+    none: () => {}
+  };
+  (sounds[type] || sounds.none)();
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+setInterval(() => {
+  if (activeTask && timerState === 'RUNNING') {
+    renderTasks();
+  }
+}, 1000);
+
+load();
+renderTasks();
+
+ if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(registration => console.log('ServiceWorker 등록 성공'))
+        .catch(err => console.log('ServiceWorker 등록 실패: ', err));
+    });
+  }
+
+let wakeLock = null;
+
+async function requestWakeLock() {
+  try {
+    if (wakeLock !== null) return; 
+    
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      console.log('화면 꺼짐 방지 활성화 완료');
+      
+      wakeLock.addEventListener('release', () => {
+        wakeLock = null;
+      });
+    }
+  } catch (err) {
+    console.error(`화면 꺼짐 방지 실패: ${err.message}`);
+  }
+}
+
+requestWakeLock();
+
+document.addEventListener('visibilitychange', () => {
+  if (wakeLock !== null && document.visibilityState === 'visible') {
+    requestWakeLock();
+  }
+});
+</script>
+</body>
+</html>
