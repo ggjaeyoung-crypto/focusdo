@@ -1105,17 +1105,15 @@ function endPress(e) {
 }
 
 function swipeToMode(direction) {
-  // 위로 → 집중시간 +5분 / 아래로 → 집중시간 -5분
-  if (!activeTask) return;
-  const delta = direction === 'up' ? 5 : -5;
-  const newMin = Math.max(1, Math.min(180, activeTask.minutes + delta));
-  if (newMin === activeTask.minutes) return;
-  activeTask.minutes = newMin;
-  timerTotal = newMin * 60;
-  save();
-  showToast(delta > 0 ? `⏫ 집중시간 ${newMin}분` : `⏬ 집중시간 ${newMin}분`);
+  // 위로 → 집중 탭 / 아래로 → 휴식 탭
+  if (direction === 'up') {
+    switchTab('focus');
+    showToast('⏱ 집중 탭');
+  } else {
+    switchTab('rest');
+    showToast('☕ 휴식 탭');
+  }
   if (navigator.vibrate) navigator.vibrate(20);
-  updateTimerUI();
 }
 
 function prevMusic() {
@@ -1178,12 +1176,35 @@ function handleTimerTap() {
 
 // ── MUSIC PLAYER ──
 let activeAudio = null, activeAudioUrl = '', activeMusicPlaylist = [], activeMusicMode = 'sequence', activeMusicIndex = -1, activeMusicToken = 0;
+let shuffleQueue = [], shuffleQueuePos = -1;
+
+function buildShuffleQueue(length, firstIndex) {
+  const arr = Array.from({length}, (_, i) => i).filter(i => i !== firstIndex);
+  for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i+1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+  return firstIndex >= 0 ? [firstIndex, ...arr] : arr;
+}
+function nextShuffleIndex() {
+  shuffleQueuePos++;
+  if (shuffleQueuePos >= shuffleQueue.length) {
+    const last = shuffleQueue.length > 0 ? shuffleQueue[shuffleQueue.length - 1] : -1;
+    const arr = Array.from({length: activeMusicPlaylist.length}, (_, i) => i);
+    for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i+1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+    if (arr[0] === last && arr.length > 1) { [arr[0], arr[1]] = [arr[1], arr[0]]; }
+    shuffleQueue = arr; shuffleQueuePos = 0;
+  }
+  return shuffleQueue[shuffleQueuePos];
+}
 
 async function prepareTimerMusicForTask(task) {
   activeMusicToken += 1; releaseActiveAudio();
   activeMusicPlaylist = cloneMusicTracks(task?.musicTracks);
   activeMusicMode = task?.musicMode === 'random' ? 'random' : 'sequence';
   activeMusicIndex = pickTimerMusicIndex(task, activeMusicPlaylist);
+  // 랜덤 모드: 셔플 큐 초기화
+  if (activeMusicMode === 'random' && activeMusicPlaylist.length > 0) {
+    shuffleQueue = buildShuffleQueue(activeMusicPlaylist.length, activeMusicIndex);
+    shuffleQueuePos = 0;
+  }
   if (activeMusicIndex >= 0) await prepareTimerMusicAt(activeMusicIndex, activeMusicToken);
 }
 function pickTimerMusicIndex(task, tracks) {
@@ -1220,7 +1241,11 @@ function pauseTimerMusic() { if (activeAudio && !activeAudio.paused) activeAudio
 function resumeTimerMusic() { playActiveMusic(); }
 async function advanceTimerMusic() {
   if (timerState === 'READY' || !activeMusicPlaylist.length) return;
-  activeMusicIndex = activeMusicMode === 'random' ? Math.floor(Math.random() * activeMusicPlaylist.length) : (activeMusicIndex + 1) % activeMusicPlaylist.length;
+  if (activeMusicMode === 'random') {
+    activeMusicIndex = nextShuffleIndex();
+  } else {
+    activeMusicIndex = (activeMusicIndex + 1) % activeMusicPlaylist.length;
+  }
   await prepareTimerMusicAt(activeMusicIndex);
   if (timerState === 'RUNNING') playActiveMusic();
 }
@@ -1243,11 +1268,12 @@ function closeTimerScreen() {
     activeTask.accumulated += timerElapsed;
     activeTask.todayCount = (activeTask.todayCount || 0) + 1;
     addHistory(activeTask.id, timerElapsed);
-    // 휴식 보상 적립
+    // 휴식 보상 적립 (timerTick에서 실시간 적립된 swRestAccum을 제외한 나머지만 추가)
     if (activeTask.restReward) {
       const ratio = (activeTask.workRatio || 5) / (activeTask.restRatio || 1);
-      const earned = timerElapsed / ratio;
-      addRestTime(earned);
+      const totalEarned = timerElapsed / ratio;
+      const remaining = totalEarned - swRestAccum;
+      if (remaining > 0) addRestTime(remaining);
     }
     save();
     showToast('⏹ 집중 기록이 저장되었어요.');
