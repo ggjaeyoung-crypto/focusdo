@@ -1,4 +1,4 @@
-const CACHE_NAME = 'focusdo-cache-v15'; // 👈 v3로 올려서 새 설정을 강제 인식시킵니다.
+const CACHE_NAME = 'focusdo-cache-v16'; // 👈 v3로 올려서 새 설정을 강제 인식시킵니다.
 const urlsToCache = [
   './index.html',
   './manifest.json',
